@@ -18,5 +18,19 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt      @map("updated_at")
 
+  games TicTac[]
+
   @@map("users")
+}
+
+model TicTac {
+  id        String   @id @default(cuid())
+  playerId  String
+  board     String   @default("---------") // 9 символов для клеток, '-' пустая
+  turn      String   @default("X") // чей ход: X или O
+  status    String   @default("playing") // playing, won, draw
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  player User @relation(fields: [playerId], references: [id])
 }

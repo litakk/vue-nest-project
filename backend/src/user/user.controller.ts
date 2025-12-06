@@ -1,37 +1,45 @@
-
 import { Body, Controller, Post } from '@nestjs/common';
 import { UserService } from './user.service';
+import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 
 @Controller('users')
 export class UserController {
-    constructor(private readonly userService: UserService) { }
+  constructor(
+    private readonly userService: UserService,
+    private readonly jwtService: JwtService, // внедряем JwtService
+  ) {}
 
-    @Post('register')
-    async register(
-        @Body('name') name: string,
-        @Body('email') email: string,
-        @Body('password') password: string,
-    ) {
-        // Хешируем пароль
-        const hashedPassword = await bcrypt.hash(password, 10);
+  @Post('register')
+  async register(
+    @Body('name') name: string,
+    @Body('email') email: string,
+    @Body('password') password: string,
+  ) {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await this.userService.createUser(name, email, hashedPassword);
+    const { password: _, ...result } = user;
+    return result;
+  }
 
-        // Создаём пользователя через UserService
-        const user = await this.userService.createUser(name, email, hashedPassword);
+  @Post('login')
+  async login(
+    @Body('email') email: string,
+    @Body('password') password: string,
+  ) {
+    const user = await this.userService.checkUser(email, password);
 
-        // Возвращаем пользователя без пароля
-        const { password: _, ...result } = user;
-        return result;
-    }
+    const { password: _, ...cleanUser } = user;
 
-    @Post('login')
-    async login(
-        @Body('email') email: string,
-        @Body('password') password: string,
-    ) {
-        const user = await this.userService.checkUser(email, password)//Передаю email и password в user.servis
-        const { password: _, ...result } = user
-        return result
-    }
+    // payload для токена
+    const payload = { id: user.id, email: user.email };
 
+    // создаём JWT
+    const token = this.jwtService.sign(payload);
+
+    return {
+      user: cleanUser,
+      token,
+    };
+  }
 }

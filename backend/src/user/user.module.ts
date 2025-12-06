@@ -1,10 +1,17 @@
 import { Module } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UserController } from './user.controller';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
-    providers: [UserService],
-    exports: [UserService],
-    controllers: [UserController]
+  imports: [
+    JwtModule.register({
+      secret: process.env.JWT_SECRET || 'SUPER_SECRET_KEY',
+      signOptions: { expiresIn: '7d' },
+    }),
+  ],
+  providers: [UserService],
+  exports: [UserService],
+  controllers: [UserController],
 })
-export class UserModule { }
+export class UserModule {}
